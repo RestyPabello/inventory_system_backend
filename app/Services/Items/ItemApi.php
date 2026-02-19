@@ -28,9 +28,9 @@ class ItemApi
         $perPage = $request->get('per_page', 10); 
 
         return DB::table('items as i')
-            ->leftJoin('units as u', 'i.unit_id', 'u.id')
             ->leftJoin('categories as c', 'i.category_id', 'c.id')
             ->leftJoin('item_variants as iv', 'i.id', 'iv.item_id')
+            ->leftJoin('units as u', 'iv.unit_id', 'u.id')
             ->leftJoin('item_variant_stocks as ivs', 'iv.id', 'ivs.item_variant_id')
             ->select(
                 'i.id as item_id',
