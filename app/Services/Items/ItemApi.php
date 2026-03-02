@@ -24,8 +24,8 @@ class ItemApi
 
     public function getAllItems($request)
     {
-
-        $perPage = $request->get('per_page', 10); 
+        $perPage = min($request->get('per_page', 10), 100);
+        $search  = $request->search;
 
         return DB::table('items as i')
             ->leftJoin('categories as c', 'i.category_id', 'c.id')
@@ -35,6 +35,7 @@ class ItemApi
             ->select(
                 'i.id as item_id',
                 'i.name as item_name',
+                'i.brand as item_brand',
                 'u.name as unit_name',
                 'c.name as category_name',
                 'iv.image',
@@ -45,7 +46,11 @@ class ItemApi
                 'ivs.expires_at',
                 'ivs.purchased_at'
             )
-            ->paginate($perPage);
+           ->when($search, function ($query, $search) {
+                $query->where('i.name', 'like', "%{$search}%");
+            })
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function createItem($request)

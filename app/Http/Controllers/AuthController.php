@@ -57,7 +57,7 @@ class AuthController extends Controller
                     'message' => 'Invalid login credentials'
                 ], 401);
             }
-
+            
             $response = Http::asForm()->post(config('app.passport_url') . '/oauth/token', [
                 'grant_type'    => 'password',
                 'client_id'     => env('PASSWORD_CLIENT_ID'),
