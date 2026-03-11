@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Items\ItemController;
+use App\Http\Controllers\Items\ItemImageController;
 use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Roles\RoleController;
 use App\Http\Controllers\Permissions\PermissionController;
@@ -20,6 +21,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('items', ItemController::class);
         Route::apiResource('units', UnitController::class);
+
+       Route::post('items/images/upload', [ItemImageController::class, 'store']);
 
         Route::get('/user', function (Request $request) {
             return $request->user();
