@@ -15,10 +15,19 @@ class ItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'          => $this->item_id,
+            'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
-            'quantity'    => $this->quantity
+            'category_id' => $this->category_id,
+            'variants'    => $this->itemVariants->map(function ($variant) {
+                return [
+                    'id'        => $variant->id,
+                    'value'     => $variant->value,
+                    'price'     => $variant->price,
+                    'image_url' => $variant->image ? asset('storage/' . $variant->image) : null,
+                    'stocks'    => $variant->itemVariantStocks,
+                ];
+            }),
         ];
     }
 }

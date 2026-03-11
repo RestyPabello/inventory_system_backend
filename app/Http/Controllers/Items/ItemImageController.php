@@ -23,9 +23,10 @@ class ItemImageController extends Controller
         $path = $this->imageUploadService->upload($request->file('image'), 'items');
         
         return response()->json([
-            'message' => 'Image uploaded to temporary storage',
-            'path'    => $path, 
-            'url'     => asset('storage/' . $path),
+            'message'       => 'Image uploaded to temporary storage',
+            'original_name' => $request->file('image')->getClientOriginalName(),
+            'path'          => $path, 
+            'url'           => asset('storage/' . $path),
         ]);
     }
 

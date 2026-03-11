@@ -40,12 +40,12 @@ class ItemController extends Controller
     public function store(ItemRequest $request)
     {
         try {
-            $result = $this->itemApi->createItem($request);
+            $item = $this->itemApi->createItem($request);
 
             return response()->json([
                 'status_code' => 201,
                 'message'     => 'Successful',
-                'data'        => $result
+                'data'        => new ItemResource($item)
             ], 201);
         } catch (\Throwable $e) {
             return response()->json([

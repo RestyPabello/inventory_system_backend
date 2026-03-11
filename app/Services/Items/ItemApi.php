@@ -24,7 +24,7 @@ class ItemApi
 
     public function getAllItems($request)
     {
-        $perPage = min($request->get('per_page', 10), 100);
+        $perPage = min($request->get('per_page', 9), 99);
         $search  = $request->search;
 
         return DB::table('items as i')
@@ -55,7 +55,8 @@ class ItemApi
 
     public function createItem($request)
     {
-        $item = $this->item->firstOrCreate([
+        return DB::transaction(function () use ($request) {
+            $item = $this->item->firstOrCreate([
                 'name' => $request->name 
             ], [
                 'brand'       => $request->brand ?? null,
@@ -63,7 +64,7 @@ class ItemApi
                 'category_id' => $request->category_id
             ]);
 
-        $itemVariant = $item->itemVariants()->firstOrCreate([
+            $itemVariant = $item->itemVariants()->updateOrCreate([
                 'unit_id' => $request->unit_id,
                 'value'   => $request->value,
             ], [
@@ -72,17 +73,18 @@ class ItemApi
                 'price'       => $request->price
             ]);
 
-        $itemVariantStock = $itemVariant->itemVariantStocks()->updateOrCreate([
+            $itemVariantStock = $itemVariant->itemVariantStocks()->updateOrCreate([
                 'item_variant_id' => $itemVariant->id,
                 'expires_at'      => $request->expires_at
             ], [
                 'quantity'     => $request->quantity,
                 'status'       => $request->status,
                 'expires_at'   => $request->expires_at,
-                'purchased_at' => $request->purchase_at ?? null
+                'purchased_at' => $request->purchased_at ?? null
             ]);
 
-        return $item->load('itemVariants.itemVariantStocks');
+            return $item->load('itemVariants.itemVariantStocks');
+        });
     }
 
     public function updateItem($request, $id)
@@ -118,7 +120,7 @@ class ItemApi
                     'quantity'     => $request->quantity,
                     'status'       => $request->status,
                     'expires_at'   => $request->expires_at,
-                    'purchased_at' => $request->purchase_at ?? null
+                    'purchased_at' => $request->purchased_at ?? null
                 ]);
 
             return $item->load('itemVariants.itemVariantStocks');
