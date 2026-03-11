@@ -15,7 +15,8 @@ class Item extends Model
         'name', 
         'brand', 
         'description', 
-        'category_id'
+        'category_id',
+        'unit_id'
     ];
 
     protected function casts(): array
