@@ -126,4 +126,19 @@ class ItemApi
             return $item->load('itemVariants.itemVariantStocks');
         });
     }
+
+    public function stats()
+    {
+        $totalOutOfStock = $this->itemVariant
+            ->whereDoesntHave('itemVariantStocks', function ($query) {
+                $query->where('quantity', '>', ItemVariantStock::EMPTY);
+            })->count();
+
+        return [
+            'total_products'     => $this->item->count(),
+            'total_variants'     => $this->itemVariant->count(),
+            'total_stock'        => (int) $this->itemVariantStock->sum('quantity'),
+            'total_out_of_stock' => $totalOutOfStock,
+        ];
+    }
 }

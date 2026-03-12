@@ -90,4 +90,22 @@ class ItemController extends Controller
             ], 404);
         }
     }
+
+    public function stats()
+    {
+        try {
+            $stats = $this->itemApi->stats();
+
+            return response()->json([
+                'status_code' => 200,
+                'message'     => 'Successful',
+                'data'        => $stats
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message'     => $e->getMessage(),
+            ], 400);
+        }
+    }
 }

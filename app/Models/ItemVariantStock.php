@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ItemVariantStock extends Model
 {
+    public const EMPTY = 0;
+
     protected $fillable = [
         'item_variant_id',
         'quantity', 
