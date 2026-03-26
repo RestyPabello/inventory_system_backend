@@ -5,21 +5,24 @@ namespace App\Services\Items;
 use App\Models\Item;
 use App\Models\ItemVariant;
 use App\Models\ItemVariantStock;
+use App\Services\Images\ImageUploadService;
 use Illuminate\Support\Facades\DB;
 
 class ItemApi
 {
     protected $item;
-
+    
     public function __construct(
         Item $item,
         ItemVariant $itemVariant,
-        ItemVariantStock $itemVariantStock
+        ItemVariantStock $itemVariantStock,
+        ImageUploadService $imageUploadService
     )
     {
-        $this->item             = $item;
-        $this->itemVariant      = $itemVariant;
-        $this->itemVariantStock = $itemVariantStock;
+        $this->item               = $item;
+        $this->itemVariant        = $itemVariant;
+        $this->itemVariantStock   = $itemVariantStock;
+        $this->imageUploadService = $imageUploadService;
     }
 
     public function getAllItems($request)
@@ -49,6 +52,7 @@ class ItemApi
            ->when($search, function ($query, $search) {
                 $query->where('i.name', 'like', "%{$search}%");
             })
+            ->groupBy('i.name', 'u.id')
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -56,6 +60,26 @@ class ItemApi
     public function createItem($request)
     {
         return DB::transaction(function () use ($request) {
+            $imagePath = null;
+
+            $existingVariant = $this->itemVariant
+                ->whereHas('item', function($q) use ($request) {
+                    $q->where('name', $request->name);
+                })
+                ->where('unit_id', $request->unit_id)
+                ->where('value', $request->value)
+                ->first();
+
+
+            if ($request->hasFile('image')) {
+                $imagePath = $this->imageUploadService
+                            ->upload($request->file('image'), 'items');
+
+                if ($existingVariant && $existingVariant->image) {
+                    $this->imageUploadService->delete($existingVariant->image);   
+                }
+            }
+
             $item = $this->item->firstOrCreate([
                 'name' => $request->name 
             ], [
@@ -68,7 +92,7 @@ class ItemApi
                 'unit_id' => $request->unit_id,
                 'value'   => $request->value,
             ], [
-                'image'       => $request->image ?? null,
+                'image'       => $imagePath ?? $existingVariant->image ?? null,
                 'description' => $request->item_variant_description,
                 'price'       => $request->price
             ]);
