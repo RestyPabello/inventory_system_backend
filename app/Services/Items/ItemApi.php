@@ -43,6 +43,7 @@ class ItemApi
                 'u.name as unit_name',
                 'c.name as category_name',
                 'iv.image',
+                'iv.value as item_variant_value',
                 'iv.description as item_variant_description',
                 'iv.price',
                 'ivs.quantity',
@@ -68,7 +69,7 @@ class ItemApi
                     $q->where('name', $request->name);
                 })
                 ->where('unit_id', $request->unit_id)
-                ->where('value', $request->value)
+                ->where('value', $request->item_variant_value)
                 ->first();
 
 
@@ -91,7 +92,7 @@ class ItemApi
 
             $itemVariant = $item->itemVariants()->updateOrCreate([
                 'unit_id' => $request->unit_id,
-                'value'   => $request->value,
+                'value'   => $request->item_variant_value,
             ], [
                 'image'       => $imagePath ?? $existingVariant->image ?? null,
                 'description' => $request->item_variant_description,
@@ -127,7 +128,7 @@ class ItemApi
 
             $itemVariant = $item->itemVariants()
                 ->where('unit_id', $request->unit_id)
-                ->where('value', $request->value)
+                ->where('value', $request->item_variant_value)
                 ->update([
                     'image'       => $request->image ?? null,
                     'description' => $request->item_variant_description,
@@ -136,7 +137,7 @@ class ItemApi
 
             $itemVariant = $item->itemVariants()
                 ->where('unit_id', $request->unit_id)
-                ->where('value', $request->value)
+                ->where('value', $request->item_variant_value)
                 ->firstOrFail();
 
             $itemVariant->itemVariantStocks()
