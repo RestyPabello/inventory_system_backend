@@ -28,6 +28,10 @@ class ImageUploadService
      */
     public function delete(?string $path): bool
     {
+        if (empty($path)) {
+            return false;
+        }
+
         if ($path && Storage::disk('public')->exists($path)) {
             return Storage::disk('public')->delete($path);
         }

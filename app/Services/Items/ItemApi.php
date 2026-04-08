@@ -118,7 +118,6 @@ class ItemApi
     public function updateItem($request, $id)
     {
         return DB::transaction(function () use ($request, $id) {
-
             $item = $this->item->findOrFail($id);
 
             $item->update([
@@ -128,28 +127,35 @@ class ItemApi
                 'category_id' => $request->category_id,
             ]);
 
-            $itemVariant = $item->itemVariants()
-                ->where('unit_id', $request->unit_id)
-                ->where('value', $request->item_variant_value)
-                ->update([
-                    'image'       => $request->image ?? null,
-                    'description' => $request->item_variant_description,
-                    'price'       => $request->price
-                ]);
+            $itemVariant = $item->itemVariants()->first();
 
-            $itemVariant = $item->itemVariants()
-                ->where('unit_id', $request->unit_id)
-                ->where('value', $request->item_variant_value)
-                ->firstOrFail();
+            if (!$itemVariant) {
+                throw new \Exception("Item Variant not found for this item.");
+            }
 
-            $itemVariant->itemVariantStocks()
-                ->where('expires_at', $request->expires_at)
-                ->update([
-                    'quantity'     => $request->quantity,
-                    'status'       => $request->status,
-                    'expires_at'   => $request->expires_at,
-                    'purchased_at' => $request->purchased_at ?? null
-                ]);
+            $imagePath = $itemVariant->image;
+
+            if ($request->hasFile('image')) {
+                $imagePath = $this->imageUploadService->upload($request->file('image'), 'items');
+
+                if ($itemVariant->image) {
+                    $this->imageUploadService->delete($itemVariant->image);   
+                }
+            }
+
+            $itemVariant->update([
+                'image'       => $imagePath, 
+                'description' => $request->item_variant_description,
+                'price'       => $request->price,
+                'unit_id'     => $request->unit_id
+            ]);
+
+            $itemVariant->itemVariantStocks()->update([
+                'quantity'     => $request->quantity,
+                'status'       => $request->status,
+                'expires_at'   => $request->expires_at,
+                'purchased_at' => $request->purchased_at ?? null
+            ]);
 
             return $item->load('itemVariants.itemVariantStocks');
         });
