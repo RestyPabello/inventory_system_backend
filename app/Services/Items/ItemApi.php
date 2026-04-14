@@ -168,8 +168,16 @@ class ItemApi
                 $query->where('quantity', '>', ItemVariantStock::EMPTY);
             })->count();
 
+        $totalProducts = DB::table(function ($query) {
+            $query->from('items')
+                ->join('item_variants as iv', 'items.id', 'iv.item_id')
+                ->join('units as u', 'iv.unit_id', 'u.id')
+                ->groupBy('items.id', 'u.id')
+                ->select('items.id as item_id', 'u.id as unit_id');
+        }, 'sub')->count();
+
         return [
-            'total_products'     => $this->item->count(),
+            'total_products'     => $totalProducts,
             'total_variants'     => $this->itemVariant->count(),
             'total_stock'        => (int) $this->itemVariantStock->sum('quantity'),
             'total_out_of_stock' => $totalOutOfStock,
