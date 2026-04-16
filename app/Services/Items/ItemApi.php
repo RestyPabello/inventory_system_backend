@@ -57,6 +57,7 @@ class ItemApi
                 $query->where('i.name', 'like', "%{$search}%");
             })
             ->groupBy('i.name', 'u.id')
+            ->orderBy('ivs.quantity', 'asc')
             ->paginate($perPage)
             ->withQueryString();
     }
