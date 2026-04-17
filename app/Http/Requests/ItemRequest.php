@@ -28,7 +28,7 @@ class ItemRequest extends FormRequest
             'item_description'         => 'nullable|string',
             'category_id'              => 'required|exists:categories,id',
             'unit_id'                  => 'required|exists:units,id',
-            'value'                    => 'required',
+            'item_variant_value'       => 'required',
             'price'                    => 'required|decimal:0,2|min:0',
             'item_variant_description' => 'nullable|string',
             'quantity'                 => 'required|integer|min:1',
