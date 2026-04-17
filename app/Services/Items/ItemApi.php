@@ -6,6 +6,7 @@ use App\Models\Item;
 use App\Models\ItemVariant;
 use App\Models\ItemVariantStock;
 use App\Services\Images\ImageUploadService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ItemApi
@@ -29,42 +30,47 @@ class ItemApi
     {
         $perPage = min($request->get('per_page', 9), 99);
         $search  = $request->search;
+        $page    = $request->get('page', 1); 
 
-        return DB::table('items as i')
-            ->leftJoin('categories as c', 'i.category_id', 'c.id')
-            ->leftJoin('item_variants as iv', 'i.id', 'iv.item_id')
-            ->leftJoin('units as u', 'iv.unit_id', 'u.id')
-            ->leftJoin('item_variant_stocks as ivs', 'iv.id', 'ivs.item_variant_id')
-            ->select(
-                'i.id as item_id',
-                'i.name as item_name',
-                'i.brand as item_brand',
-                'i.description as item_description',
-                'u.id as unit_id',
-                'u.name as unit_name',
-                'c.id as category_id',
-                'c.name as category_name',
-                'iv.image',
-                'iv.value as item_variant_value',
-                'iv.description as item_variant_description',
-                'iv.price',
-                'ivs.quantity',
-                'ivs.status',
-                'ivs.expires_at',
-                'ivs.purchased_at'
-            )
-           ->when($search, function ($query, $search) {
-                $query->where('i.name', 'like', "%{$search}%");
-            })
-            ->groupBy('i.name', 'u.id')
-            ->orderBy('ivs.quantity', 'asc')
-            ->paginate($perPage)
-            ->withQueryString();
+        $cacheKey = "items_search_" . ($search ?? 'all') . "_page_{$page}_perpage_{$perPage}";
+
+        return Cache::remember($cacheKey, 300, function () use ($search, $perPage) {
+            return DB::table('items as i')
+                ->leftJoin('categories as c', 'i.category_id', 'c.id')
+                ->leftJoin('item_variants as iv', 'i.id', 'iv.item_id')
+                ->leftJoin('units as u', 'iv.unit_id', 'u.id')
+                ->leftJoin('item_variant_stocks as ivs', 'iv.id', 'ivs.item_variant_id')
+                ->select(
+                    'i.id as item_id',
+                    'i.name as item_name',
+                    'i.brand as item_brand',
+                    'i.description as item_description',
+                    'u.id as unit_id',
+                    'u.name as unit_name',
+                    'c.id as category_id',
+                    'c.name as category_name',
+                    'iv.image',
+                    'iv.value as item_variant_value',
+                    'iv.description as item_variant_description',
+                    'iv.price',
+                    'ivs.quantity',
+                    'ivs.status',
+                    'ivs.expires_at',
+                    'ivs.purchased_at'
+                )
+            ->when($search, function ($query, $search) {
+                    $query->where('i.name', 'like', "%{$search}%");
+                })
+                ->groupBy('i.name', 'u.id')
+                ->orderBy('ivs.quantity', 'asc')
+                ->paginate($perPage)
+                ->withQueryString();
+         });
     }
 
     public function createItem($request)
     {
-        return DB::transaction(function () use ($request) {
+        $result = DB::transaction(function () use ($request) {
             $imagePath = null;
 
             $existingVariant = $this->itemVariant
@@ -114,11 +120,14 @@ class ItemApi
 
             return $item->load('itemVariants.itemVariantStocks');
         });
+
+        Cache::flush();
+        return $result;
     }
 
     public function updateItem($request, $id)
     {
-        return DB::transaction(function () use ($request, $id) {
+        $result = DB::transaction(function () use ($request, $id) {
             $item = $this->item->findOrFail($id);
 
             $item->update([
@@ -160,6 +169,9 @@ class ItemApi
 
             return $item->load('itemVariants.itemVariantStocks');
         });
+
+        Cache::flush();
+        return $result;
     }
 
     public function stats()
