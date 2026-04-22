@@ -6,8 +6,10 @@ use App\Models\Item;
 use App\Models\ItemVariant;
 use App\Models\ItemVariantStock;
 use App\Services\Images\ImageUploadService;
+use Illuminate\Http\UploadedFile; 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class ItemApi
 {
@@ -195,5 +197,67 @@ class ItemApi
             'total_stock'        => (int) $this->itemVariantStock->sum('quantity'),
             'total_out_of_stock' => $totalOutOfStock,
         ];
+    }
+
+    public function scanImage(UploadedFile $image): array
+    {
+        $base64Image = base64_encode(file_get_contents($image));
+        $mimeType    = $image->getMimeType();
+
+        $model = config('services.gemini.model');
+        $url   = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
+
+        $response = Http::withHeaders(['Content-Type' => 'application/json'])
+            ->post($url . '?key=' . config('services.gemini.key'), [
+                'contents' => [
+                    [
+                        'parts' => [
+                            [
+                                'text' => "Return a JSON object only. No markdown. Analyze this image and output: " .
+                                          "is_product (boolean - true if this is a product/item image, false if not), " .
+                                          "name (string), brand (string), price (number), " .
+                                          "category (one of: Food, Drinks, Snacks, Personal Care, Household, Condiments, Dairy). " .
+                                          "If unknown, set as null.",
+                            ],
+                            [
+                                'inline_data' => [
+                                    'mime_type' => $mimeType,
+                                    'data'      => $base64Image,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            throw new \Exception("AI Service Error: " . $response->body());
+        }
+
+        $text = $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+        if (!$text) {
+            throw new \Exception("AI failed to return a valid response.");
+        }
+
+        return $this->parseAiResponse($text);
+    }
+
+    // Cleans and parses the raw AI text response into a decoded JSON array
+    private function parseAiResponse(string $text): array
+    {
+        $text = trim($text);
+        $text = preg_replace('/^```json\s*/i', '', $text);
+        $text = preg_replace('/^```\s*/i', '', $text);
+        $text = preg_replace('/```\s*$/i', '', $text);
+        $text = trim($text);
+
+        $decoded = json_decode($text, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception("Failed to parse AI response as JSON: " . $text);
+        }
+
+        return $decoded;
     }
 }
