@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('items/stats/products', [ItemController::class, 'stats']);
         Route::post('items/images/upload', [ItemImageController::class, 'store']);
+        Route::post('/items/scan', [ItemController::class, 'scanImage']);
         Route::delete('variants/{variant}/image', [ItemImageController::class, 'destroy']);
 
         Route::get('/user', function (Request $request) {
