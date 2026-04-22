@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Items;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ItemRequest;
+use App\Http\Requests\Items\ScanImageRequest;
 use App\Http\Resources\Items\ItemResource;
 use App\Models\Item;
 use App\Services\Items\ItemApi;
+use App\Services\Items\ItemService;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -14,9 +16,13 @@ class ItemController extends Controller
 {
     protected $itemApi;
 
-    public function __construct(ItemApi $itemApi)
+    public function __construct(
+        ItemApi $itemApi,
+        ItemService $itemService    
+    )
     {
-        $this->itemApi = $itemApi;
+        $this->itemApi     = $itemApi;
+        $this->itemService = $itemService;
     }
 
     public function index(Request $request)
@@ -101,6 +107,24 @@ class ItemController extends Controller
                 'message'     => 'Successful',
                 'data'        => $stats
             ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message'     => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function scanImage(ScanImageRequest $request)
+    {
+        try {
+            $data = $this->itemService->scanImage($request->file('image'));
+
+            return response()->json([
+                'status_code' => 200,
+                'message'     => 'Successful',
+                'data'        => $data
+            ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'status_code' => 400,
