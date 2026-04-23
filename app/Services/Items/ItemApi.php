@@ -243,6 +243,29 @@ class ItemApi
         return $this->parseAiResponse($text);
     }
 
+    public function scanBarcode(string $barcode): array
+    {
+        $result = DB::table('item_variant_barcodes as ivb')
+        ->join('item_variants as iv', 'ivb.item_variant_id', 'iv.id')
+        ->join('items as i', 'iv.item_id', 'i.id')
+        ->where('ivb.barcode', $barcode)
+        ->select(
+            'i.name',
+            'i.brand',
+            'i.category_id',
+            'iv.unit_id',
+            'iv.price',
+            'iv.value as item_variant_value',
+        )
+        ->first();
+
+        if (!$result) {
+            throw new \Exception("Barcode not found.");
+        }
+
+        return (array) $result;
+    }
+
     // Cleans and parses the raw AI text response into a decoded JSON array
     private function parseAiResponse(string $text): array
     {
