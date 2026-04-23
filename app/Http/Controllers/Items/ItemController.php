@@ -132,4 +132,22 @@ class ItemController extends Controller
             ], 400);
         }
     }
+
+    public function scanBarcode(string $barcode)
+    {
+        try {
+            $data = $this->itemApi->scanBarcode($barcode);
+
+            return response()->json([
+                'status_code' => 200,
+                'message'     => 'Successful',
+                'data'        => $data
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message'     => $e->getMessage(),
+            ], 400);
+        }
+    }
 }
