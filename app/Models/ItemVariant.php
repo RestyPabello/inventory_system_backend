@@ -26,4 +26,9 @@ class ItemVariant extends Model
     {
         return $this->hasMany(ItemVariantStock::class);
     }
+
+    public function itemVariantBarcodes()
+    {
+        return $this->hasMany(ItemVariantBarcode::class);
+    }
 }
